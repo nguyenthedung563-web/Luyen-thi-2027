@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tri Thức — Phòng luyện thi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #1c2a24;
+    --ink-light: #3d5547;
+    --paper-deep: #f0ede4;
+    --paper-lighter: #fdfbf8;
+    --moss: #3e5f4d;
+    --moss-deep: #2a463b;
+    --moss-light: #5a7867;
+    --gold-soft: #dac880;
+    --rose: #b3473f;
+    --rose-light: #d4615a;
+    --line: rgba(28,42,36,0.12);
+    --line-strong: rgba(28,42,36,0.22);
+    --shadow-sm: 0 2px 8px rgba(28,42,36,0.08);
+    --shadow: 0 8px 24px rgba(28,42,36,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0;
+    font-family:'Inter', sans-serif;
+    color:var(--ink);
+    background:var(--paper-deep);
+    min-height:100vh;
+    line-height:1.5;
+    letter-spacing:0.3px;
+  }
+  
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px;
+    background:var(--moss-deep);
+    color:#f3efe4;
+    box-shadow: var(--shadow-sm);
+  }
+  .topbar .brand{
+    font-family:'Lora', serif; font-weight:700; font-style:italic; font-size:20px;
+    display:flex; align-items:center; gap:10px; letter-spacing:0.01em;
+  }
+  .topbar .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--gold-soft);}
+  .back-link{
+    color:#e7e2cf; text-decoration:none; font-size:14px; letter-spacing:0.04em;
+    border:1px solid rgba(243,239,228,0.35); padding:9px 16px; border-radius:8px;
+    transition:all .2s ease;
+    background:rgba(243,239,228,0.05);
+  }
+  .back-link:hover{background:rgba(243,239,228,0.15); border-color:rgba(243,239,228,0.7); transform:translateY(-1px);}
+
+  .layout{
+    display:grid;
+    /* fixed left control panel + flexible right content */
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: auto 1fr; /* row 1: questions, row 2: sheet */
+    gap:20px;
+    padding:20px 24px;
+    align-items:start;
+  }
+
+  /* ---- control panel ---- */
+  .panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    box-shadow: var(--shadow);
+    /* place control panel in left column spanning both rows */
+    grid-column: 1 / 2;
+    grid-row: 1 / -1;
+    position:relative;
+  }
+  .panel h2{font-family:'Lora', serif; font-size:20px; margin:0 0 6px 0; color:var(--moss-deep); font-weight:700;}
+  .panel .panel-sub{font-size:14px; color:#8b9a91; margin-bottom:10px; line-height:1.3;}
+
+  .timer-display{
+    text-align:center; font-family:'Lora', serif; font-size:56px; font-weight:700; color:var(--moss-deep);
+    background:linear-gradient(135deg, #fdfbf8 0%, #f8f4eb 100%); border:1.5px solid var(--line-strong);
+    border-radius:12px; padding:6px 0; margin-bottom:10px; letter-spacing:0.02em; position:relative;
+  }
+  .timer-display .timer-label{
+    display:block; font-family:'Inter',sans-serif; font-weight:600; font-size:12px;
+    letter-spacing:0.15em; text-transform:uppercase; color:#a8b5b0; margin-bottom:6px;
+  }
+  .timer-display.danger{color:var(--rose-light);}
+
+  .field-group{margin-bottom:22px;}
+  .field-group label{
+    display:block; font-size:13px; font-weight:700; letter-spacing:0.04em;
+    color:#5b6a5f; margin-bottom:9px; text-transform:uppercase;
+  }
+  select, .madekit-input{
+    width:100%; padding:12px 13px; font-size:15px; font-family:'Inter',sans-serif;
+    border:1.5px solid var(--line-strong); border-radius:10px; background:#fff; color:var(--ink);
+    outline:none; transition:all .2s ease;
+  }
+  select:hover, .madekit-input:hover{border-color:var(--line); background:#fdfbf8;}
+  select:focus, .madekit-input:focus{border-color:var(--moss); box-shadow:0 0 0 3.5px rgba(62,95,77,0.1);}
+
+  .btn-row{display:flex; flex-direction:row; gap:8px; margin-top:8px;}
+  .btn{
+    border:none; border-radius:8px; padding:10px 12px; font-size:15px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; letter-spacing:0.01em;
+    transition: all .2s ease; display:flex; align-items:center; justify-content:center; gap:8px;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn:hover:not(:disabled){filter:brightness(1.08); transform:translateY(-2px); box-shadow: var(--shadow);}
+  .btn:active:not(:disabled){transform:translateY(0);}
+  .btn:disabled{opacity:0.5; cursor:not-allowed; transform:none; filter:none;}
+  .btn-start{background:linear-gradient(135deg, var(--moss) 0%, var(--moss-light) 100%); color:#fff;}
+  .btn-submit{background:linear-gradient(135deg, var(--rose) 0%, var(--rose-light) 100%); color:#fff;}
+  .btn-reset{background:#fff; color:var(--moss); border:1.5px solid var(--line-strong);}
+
+  .divider{height:1px; background:var(--line); margin:24px 0;}
+
+  .made-result{
+    margin-top:11px; padding:13px 15px; border-radius:10px; background:#eef3ea; border:1px solid #d3e0cc;
+    font-size:14px; color:var(--moss-deep); display:none; line-height:1.5;
+  }
+  .made-result.show{display:block; animation: slideDown .2s ease;}
+  .made-result b{display:block; font-family:'Lora',serif; font-size:15px; margin-bottom:4px; font-weight:600;}
+  @keyframes slideDown{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+
+  .status-pill{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700;
+    letter-spacing:0.08em; text-transform:uppercase; padding:8px 12px; border-radius:8px;
+    background:#f0ede4; color:#8b9a91; margin-bottom:20px;
+  }
+  .status-pill .dot{width:6px;height:6px;border-radius:50%; background:#a8b5b0;}
+  .status-pill.running{background:#e6f0e2; color:var(--moss);}
+  .status-pill.running .dot{background:var(--moss); animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  /* ---- answer sheet ---- */
+  .sheet-wrap{
+    background:#fff; border-radius:16px; box-shadow: var(--shadow);
+    padding:36px 40px 44px 40px; border:1px solid var(--line);
+  }
+  .sheet-title{text-align:center; margin-bottom:6px;}
+  .sheet-title h1{
+    font-family:'Lora', serif; font-weight:700; font-size:32px; letter-spacing:0.02em;
+    margin:0 0 8px 0; color:var(--rose); font-style:italic;
+  }
+  .sheet-title .ky-thi{font-size:15px; color:#5a6a5e; font-weight:500;}
+  .sheet-title .ky-thi .fillin{display:inline-block; border-bottom:1.5px dotted #999; min-width:240px; margin:0 6px; position:relative; bottom:-2px;}
+
+  .sheet-row1{display:flex; gap:20px; align-items:flex-start; margin:20px 0 0 0; font-size:15px; line-height:1.6;}
+  .sheet-row1 .baithi{flex:0 0 auto;}
+  .fillin{display:inline-block; border-bottom:1.5px dotted #999; min-width:120px; position:relative; bottom:-1px;}
+
+  .sheet-grid{display:grid; grid-template-columns: 1fr 1.3fr 1.1fr; gap:18px; margin-top:24px;}
+  .info-box{border:1.5px solid var(--rose); border-radius:6px; font-size:13px; overflow:hidden; display:flex; flex-direction:column;}
+  .info-box .info-head{
+    text-align:center; padding:14px 10px; border-bottom:1.5px solid var(--rose); font-weight:700; background:#faf7f0;
+    line-height:1.5; font-size:12px; flex-shrink:0;
+  }
+  .info-box.split > div:first-child{border-bottom:1.5px solid var(--rose);}
+  .info-lines{padding:13px 14px; line-height:2.1; font-size:13px; flex:1;}
+
+  /* scrollable question list + slider */
+  .question-scroll{max-height:360px; overflow:auto; padding-right:8px;}
+  .question-slider{width:100%; margin-top:8px;}
+
+  /* Make question numbers/text slightly larger than the answer bubbles */
+  /* Question text in the question list should be more prominent than the small bubbles */
+  #questionList > div > div:first-child{font-size:16px; line-height:1.4; font-weight:600; color:var(--ink);}
+  #questionList > div > div + div{font-size:14px; color:#3b4340; margin-left:12px;}
+
+  /* questions on top (row 1, right); sheet below (row 2, right) */
+  .questions-column{grid-column:2 / 3; grid-row:1 / 2;}
+  .sheet-wrap{grid-column:2 / 3; grid-row:2 / 3;}
+
+  .sbd-block{display:flex; gap:16px; justify-content:flex-end; align-items:flex-start;}
+  .id-grid{border:1.5px solid var(--rose); border-radius:6px; overflow:hidden; font-size:12px; flex:1; min-width:120px;}
+  .id-grid-head{text-align:center; font-weight:700; padding:8px 0; border-bottom:1.5px solid var(--rose); background:#faf7f0;}
+  .id-grid-boxes{display:flex;}
+  .id-col{display:flex; flex-direction:column; align-items:center; justify-content:center; border-left:1px solid var(--rose);}
+  .id-col:first-child{border-left:none;}
+  .bubble{
+    width:19px; height:19px; border-radius:50%; border:1.4px solid var(--rose);
+    margin:4px 0; cursor:pointer; background:#fff; flex:0 0 auto; transition: all .15s ease;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .bubble:hover{transform:scale(1.15); box-shadow:0 0 0 2px rgba(179, 71, 63, 0.15);}
+  .bubble.filled{background:#000; border-color:#000;} 
+  .bubble.sel-correct{border-color:#228B22 !important; box-shadow:0 6px 12px rgba(34,139,34,0.25);} 
+  .bubble.sel-wrong{border-color:var(--rose) !important; box-shadow:0 6px 12px rgba(179,71,63,0.08);} 
+  .bubble.correct-answer{border-color:#228B22 !important;}
+
+  .section-title{
+    font-family:'Lora', serif; font-weight:700; font-size:17px; margin:36px 0 16px 0; color:var(--moss-deep);
+    text-transform:uppercase; letter-spacing:0.1em;
+  }
+  .note-line{font-style:italic; font-size:14px; text-align:center; color:#7a8a7f; margin:18px 0;}
+
+  .part1-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .qblock{border:1.4px solid var(--rose); border-radius:6px; padding:11px 12px 12px 11px; background:#faf7f0;}
+  .qblock .letters{display:flex; font-size:12px; font-weight:800; color:var(--rose); margin-bottom:5px; justify-content:space-around;}
+  .qblock .letters span{flex:1; text-align:center;}
+  .qblock .letters .qnum-space{width:20px; flex:none;}
+  .qrow{display:flex; align-items:center; margin:5px 0;}
+  .qrow .qn{width:28px; font-size:15px; font-weight:700; text-align:center; color:var(--ink-light); flex-shrink:0;}
+  .qrow .opt{flex:1; display:flex; align-items:center; justify-content:center;}
+
+  .part2-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:12px;}
+  .p2-pair{border:1.4px solid var(--rose); border-radius:6px; display:flex; overflow:hidden; background:#faf7f0;}
+  .p2-cau{flex:1; padding:10px 10px;}
+  .p2-cau:first-child{border-right:1.4px solid var(--rose);}
+  .p2-cau .cau-label{text-align:center; font-weight:700; font-size:13px; margin-bottom:6px;}
+  .p2-cau .ds-head{display:flex; font-size:11px; color:var(--rose); font-weight:800; justify-content:space-around; margin-bottom:5px;}
+  .p2-line{display:flex; align-items:center; font-size:12px; gap:5px; justify-content:space-between; margin:4px 0;}
+  .p2-line .opts{display:flex; align-items:center; gap:11px;}
+
+  .part3-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-top:12px;}
+  .p3-col{border:1.4px solid var(--rose); border-radius:6px; padding:10px 9px; background:#faf7f0;}
+  .p3-col .cau-label{text-align:center; font-weight:700; font-size:13px; margin-bottom:8px;}
+  .p3-boxes{display:flex; gap:3px; justify-content:center; margin-bottom:8px;}
+  .p3-digit-cell{width:18px; height:21px; border:1px solid var(--rose); border-radius:2px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--ink-light);}
+  .p3-digit-cell.has-val{color:#000;}
+  .p3-col.correct .p3-digit-cell{border-color:var(--moss); box-shadow:0 6px 14px rgba(62,95,77,0.06);}
+  .p3-col.wrong .p3-digit-cell{border-color:var(--rose); box-shadow:0 6px 14px rgba(179,71,63,0.06);}
+  .p3-col.correct .p3-rows .bubble.filled{background:var(--moss); border-color:var(--moss);}
+  .p3-col.wrong .p3-rows .bubble.filled{background:var(--rose); border-color:var(--rose);}
+  .bubble.has-val{background:#000;}
+  .qrow.correct{border:1.4px solid var(--moss); border-radius:6px; padding:4px;}
+  .qrow.wrong{border:1.4px solid var(--rose); border-radius:6px; padding:4px;}
+  .p2-line.correct{border:1.2px solid var(--moss); border-radius:6px; padding:6px;}
+  .p2-line.wrong{border:1.2px solid var(--rose); border-radius:6px; padding:6px;}
+  .qrow.wrong .bubble.filled{border-color:var(--rose);} 
+  .p2-line.wrong .bubble.filled{border-color:var(--rose);} 
+  .p3-rows{display:flex; flex-direction:column; align-items:center;}
+  .p3-symrow{display:flex; align-items:center; gap:5px; font-size:12px; height:21px;}
+  .p3-symrow .sym{width:12px; text-align:center; font-weight:800;}
+
+  footer.app-footer{text-align:center; padding:36px 0 56px 0; font-size:12px; color:#a8b5b0; letter-spacing:0.1em; text-transform:uppercase;}
+
+  @media (max-width: 1024px){
+    .layout{grid-template-columns:1fr; grid-template-rows:auto;}
+    .panel{position:static; grid-column: auto;}
+    .part1-grid, .part2-grid{grid-template-columns:repeat(2,1fr);}
+    .part3-grid{grid-template-columns:repeat(3,1fr);}
+    .sheet-grid{grid-template-columns:1fr;}
+    .sbd-block{justify-content:flex-start;}
+  }
+  @media (max-width:640px){
+    .layout{gap:20px; padding:20px;}
+    .panel{padding:24px 20px;}
+    .sheet-wrap{padding:28px 24px;}
+    .part1-grid, .part2-grid{grid-template-columns:1fr;}
+    .part3-grid{grid-template-columns:repeat(2,1fr);}
+    .sheet-title h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+
+<section id="practice">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>Tri Thức — Phòng luyện thi</div>
+    <a class="back-link" href="index.html">← Về trang chủ</a>
+  </div>
+
+  <div class="layout">
+    <aside class="panel">
+      <h2>Bảng điều khiển</h2>
+      <p class="panel-sub">Thiết lập thời gian và theo dõi bài làm</p>
+
+      <div id="statusPill" class="status-pill"><span class="dot"></span>Chưa bắt đầu</div>
+
+      <div class="timer-display" id="timerDisplay">
+        <span class="timer-label">Thời gian còn lại</span>
+        <span id="timerText">45:00</span>
+      </div>
+
+      <div class="field-group">
+        <label for="durationSelect">Thời gian làm bài</label>
+        <select id="durationSelect">
+          <option value="45">45 phút</option>
+          <option value="60">60 phút</option>
+          <option value="90">90 phút</option>
+          <option value="120">120 phút</option>
+        </select>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-start" id="btnStart" onclick="startExam()">▶ Bắt đầu</button>
+        <button class="btn btn-submit" id="btnSubmit" onclick="submitExam()" disabled>✔ Nộp bài</button>
+        <button class="btn btn-reset" id="btnReset" onclick="resetExam()">↺ Làm lại</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-group">
+        <label for="madeInput">Điền mã đề</label>
+        <input class="madekit-input" id="madeInput" placeholder="VD: 101" maxlength="10" inputmode="text" list="madeCodesList" oninput="lookupMaDe()">
+        <datalist id="madeCodesList"></datalist>
+      </div>
+      <div class="field-group">
+        <label for="codeSelect">Chọn mã đề có sẵn</label>
+        <select class="madekit-input" id="codeSelect" onchange="onCodeSelectChange()">
+          <option value="">-- Chọn mã đề --</option>
+        </select>
+      </div>
+      <!-- removed answer visibility toggle; answers are not displayed on page -->
+      <div class="made-result" id="madeResult">
+        <b id="madeTitle">—</b>
+        <span id="madeDesc">Nhập mã đề hợp lệ để xem thông tin đề thi.</span>
+      </div>
+    </aside>
+
+    <div class="questions-column">
+      <div class="sheet-title">
+        <h1>PHIẾU TRẮ LỜI — Thông tin</h1>
+      </div>
+      <div class="sheet-grid" id="sheetGrid">
+        <div class="info-box">
+          <div class="info-head">Thông tin đề thi</div>
+          <div class="info-lines" id="examInfo">Nhập mã đề để xem chi tiết đề thi.</div>
+        </div>
+        <div class="info-box">
+          <div class="info-head">Danh sách mã đề</div>
+          <div class="info-lines" id="examCodes">Đang tải dữ liệu từ Google Sheet...</div>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:18px;">
+        <div class="info-head">Câu hỏi</div>
+        <div class="info-lines">
+          <div id="questionList" class="question-scroll">Nhập mã đề để lấy câu hỏi từ sheet.</div>
+          <input id="questionSlider" class="question-slider" type="range" min="0" value="0">
+        </div>
+      </div>
+      <p class="note-line">Chú ý: Thí sinh cần đọc kỹ hướng dẫn ở mặt sau Phiếu này.</p>
+    </div>
+
+    <main class="sheet-wrap">
+      <div class="section-title">PHẦN I</div>
+      <div class="part1-grid" id="part1Grid"></div>
+
+      <div class="section-title">PHẦN II</div>
+      <div class="part2-grid" id="part2Grid"></div>
+
+      <div class="section-title">PHẦN III</div>
+      <div class="part3-grid" id="part3Grid"></div>
+    </main>
+  </div>
+
+  <footer class="app-footer">Tri Thức · Phiếu mô phỏng phục vụ luyện tập</footer>
+</section>
+
+<script>
+  /* SBD block removed per user request */
+
+/* ---------------- Build PHẦN I (1-40, A B C D) ---------------- */
+const part1Grid = document.getElementById('part1Grid');
+const ranges = [[1,10],[11,20],[21,30],[31,40]];
+ranges.forEach(([start,end])=>{
+  const block = document.createElement('div');
+  block.className = 'qblock';
+  const letters = document.createElement('div');
+  letters.className = 'letters';
+  letters.innerHTML = '<span class="qnum-space"></span><span>A</span><span>B</span><span>C</span><span>D</span>';
+  block.appendChild(letters);
+  for(let q=start; q<=end; q++){
+    const row = document.createElement('div');
+    row.className = 'qrow';
+    row.innerHTML = `<div class="qn">${q}</div>`;
+    ['A','B','C','D'].forEach(opt=>{
+      const optWrap = document.createElement('div');
+      optWrap.className = 'opt';
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.onclick = ()=>{
+        row.querySelectorAll('.bubble').forEach(x=>{ x.classList.remove('filled'); x.classList.remove('has-val'); });
+        b.classList.add('filled');
+        b.classList.add('has-val');
+      };
+      optWrap.appendChild(b);
+      row.appendChild(optWrap);
+    });
+    block.appendChild(row);
+  }
+  part1Grid.appendChild(block);
+});
+
+/* ---------------- Build PHẦN II (Câu 1-8, Đúng/Sai a-d) ---------------- */
+const part2Grid = document.getElementById('part2Grid');
+const pairs = [[1,2],[3,4],[5,6],[7,8]];
+pairs.forEach(pair=>{
+  const pairWrap = document.createElement('div');
+  pairWrap.className = 'p2-pair';
+  pair.forEach(cauNum=>{
+    const cauWrap = document.createElement('div');
+    cauWrap.className = 'p2-cau';
+    cauWrap.innerHTML = `<div class="cau-label">Câu ${cauNum}</div><div class="ds-head"><span>Đúng</span><span>Sai</span></div>`;
+    ['a)','b)','c)','d)'].forEach(letter=>{
+      const line = document.createElement('div');
+      line.className = 'p2-line';
+      line.innerHTML = `<span>${letter}</span>`;
+      const opts = document.createElement('div');
+      opts.className = 'opts';
+      ['Đ','S'].forEach(()=>{
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        b.onclick = ()=>{
+          opts.querySelectorAll('.bubble').forEach(x=>{ x.classList.remove('filled'); x.classList.remove('has-val'); });
+          b.classList.add('filled');
+          b.classList.add('has-val');
+        };
+        opts.appendChild(b);
+      });
+      line.appendChild(opts);
+      cauWrap.appendChild(line);
+    });
+    pairWrap.appendChild(cauWrap);
+  });
+  part2Grid.appendChild(pairWrap);
+});
+
+/* ---------------- Build PHẦN III (Câu 1-6, số thập phân) ---------------- */
+const part3Grid = document.getElementById('part3Grid');
+let activePart3CellIdx = 0; // track active cell for keyboard input
+
+for(let cau=1; cau<=6; cau++){
+  const col = document.createElement('div');
+  col.className = 'p3-col';
+  col.innerHTML = `<div class="cau-label">Câu ${cau}</div>`;
+
+  const boxes = document.createElement('div');
+  boxes.className = 'p3-boxes';
+  for(let i=0;i<4;i++){
+    const cell = document.createElement('div');
+    cell.className = 'p3-digit-cell';
+    cell.contentEditable = 'true';
+    cell.dataset.cellIdx = i;
+    cell.style.cursor = 'text';
+    cell.style.userSelect = 'none';
+      cell.addEventListener('input', ()=>{
+        cell.classList.toggle('has-val', cell.textContent.trim().length>0);
+        // sync bubbles in rows for this column
+        const colIdx = parseInt(cell.dataset.cellIdx,10);
+        const val = normalizePart3Value(cell.textContent);
+        col.querySelectorAll('.p3-symrow').forEach(sr=>{
+          sr.querySelectorAll('.bubble').forEach(b=>{
+            if(b.dataset && String(b.dataset.col) === String(colIdx)){
+              const bd = b.dataset.digit ? normalizePart3Value(b.dataset.digit) : normalizePart3Value(b.textContent);
+              if(bd === val) b.classList.add('filled'); else b.classList.remove('filled');
+            }
+          });
+        });
+      });
+    cell.onkeydown = (e)=>{
+      if(e.key >= '0' && e.key <= '9'){
+        e.preventDefault();
+        cell.textContent = e.key;
+      } else if(e.key === '-' || e.key === '_'){
+        e.preventDefault();
+        cell.textContent = '−';
+      } else if(e.key === ',' || e.key === '.'){
+        e.preventDefault();
+        cell.textContent = ',';
+      } else if(e.key === 'ArrowRight' && i < 3){
+        e.preventDefault();
+        boxes.children[i+1].focus();
+      } else if(e.key === 'ArrowLeft' && i > 0){
+        e.preventDefault();
+        boxes.children[i-1].focus();
+      } else if(e.key === 'Backspace' || e.key === 'Delete'){
+        e.preventDefault();
+        cell.textContent = '';
+      }
+    };
+    cell.onpaste = (e)=>{ e.preventDefault(); };
+    cell.oncut = (e)=>{ e.preventDefault(); };
+    boxes.appendChild(cell);
+  }
+  col.appendChild(boxes);
+
+  const rowsWrap = document.createElement('div');
+  rowsWrap.className = 'p3-rows';
+
+  // "-" row: keep one bubble in column 1, placeholders for columns 2-4
+  const minusRow = document.createElement('div');
+  minusRow.className = 'p3-symrow';
+  minusRow.innerHTML = '<span class="sym">−</span>';
+  const firstBubble = document.createElement('div');
+  firstBubble.className = 'bubble';
+  firstBubble.dataset.col = 0;
+  firstBubble.dataset.digit = '−';
+  firstBubble.onclick = ()=>{
+    // toggle filled in this column
+    const colIdx = 0;
+    const filled = !firstBubble.classList.contains('filled');
+    col.querySelectorAll('.p3-symrow').forEach(sr=> sr.querySelectorAll('.bubble').forEach(b=>{ if(b.dataset && String(b.dataset.col) === String(colIdx)) b.classList.remove('filled'); }));
+    if(filled) firstBubble.classList.add('filled');
+    // set cell
+    const target = boxes.children[colIdx];
+    if(filled){ target.textContent = '−'; target.classList.add('has-val'); } else { target.textContent = ''; target.classList.remove('has-val'); }
+  };
+  minusRow.appendChild(firstBubble);
+  for(let i=0;i<3;i++){
+    const ph = document.createElement('div');
+    ph.style.width='19px'; ph.style.height='19px'; ph.style.visibility='hidden';
+    minusRow.appendChild(ph);
+  }
+  rowsWrap.appendChild(minusRow);
+
+  // "," row: place visible small bubbles in column 2 and 3, placeholders for col 1 & 4
+  const commaRow = document.createElement('div');
+  commaRow.className = 'p3-symrow';
+  const commaSym = document.createElement('span');
+  commaSym.className = 'sym';
+  commaSym.textContent = ',';
+  commaRow.appendChild(commaSym);
+  // col 1 placeholder (invisible)
+  const ph1 = document.createElement('div'); ph1.style.width='19px'; ph1.style.height='19px'; ph1.style.visibility='hidden'; commaRow.appendChild(ph1);
+  // col 2 & 3 bubbles (visible 'o')
+  // these bubbles correspond to columns 1 and 2
+  for(let j=1;j<=2;j++){
+    const b = document.createElement('div'); b.className='bubble';
+    b.dataset.col = j; b.dataset.digit = ',';
+    b.onclick = ()=>{
+      const colIdx = j;
+      const filled = !b.classList.contains('filled');
+      col.querySelectorAll('.p3-symrow').forEach(sr=> sr.querySelectorAll('.bubble').forEach(bb=>{ if(bb.dataset && String(bb.dataset.col) === String(colIdx)) bb.classList.remove('filled'); }));
+      if(filled) b.classList.add('filled');
+      const target = boxes.children[colIdx];
+      if(filled){ target.textContent = ','; target.classList.add('has-val'); } else { target.textContent = ''; target.classList.remove('has-val'); }
+    };
+    commaRow.appendChild(b);
+  }
+  // col 4 placeholder
+  const ph4 = document.createElement('div'); ph4.style.width='19px'; ph4.style.height='19px'; ph4.style.visibility='hidden'; commaRow.appendChild(ph4);
+  rowsWrap.appendChild(commaRow);
+
+  // digit rows 0-9
+  for(let d=0; d<=9; d++){
+    const dRow = document.createElement('div');
+    dRow.className = 'p3-symrow';
+    dRow.innerHTML = `<span class="sym">${d}</span>`;
+    for(let c=0;c<4;c++){
+      const b = document.createElement('div'); b.className='bubble';
+      b.dataset.col = c; b.dataset.digit = String(d);
+      b.onclick = ()=>{
+        const colIdx = c;
+        // clear other filled in same column
+        col.querySelectorAll('.p3-symrow').forEach(sr=> sr.querySelectorAll('.bubble').forEach(bb=>{ if(bb.dataset && String(bb.dataset.col) === String(colIdx)) bb.classList.remove('filled'); }));
+        b.classList.add('filled');
+        // set corresponding cell text
+        const target = boxes.children[colIdx];
+        target.textContent = String(d);
+        target.classList.add('has-val');
+      };
+      dRow.appendChild(b);
+    }
+    rowsWrap.appendChild(dRow);
+  }
+  col.appendChild(rowsWrap);
+  part3Grid.appendChild(col);
+}
+
+// Helper to normalize entered value for comparison
+function normalizePart3Value(str){
+  if(!str) return '';
+  return str.replace(/\u2212/g,'-').replace(/\./g,',').trim();
+}
+
+/* ---------------- Timer logic ---------------- */
+let timerInterval = null;
+let remainingSeconds = 45*60;
+let examRunning = false;
+
+const durationSelect = document.getElementById('durationSelect');
+const timerText = document.getElementById('timerText');
+const timerDisplay = document.getElementById('timerDisplay');
+const btnStart = document.getElementById('btnStart');
+const btnSubmit = document.getElementById('btnSubmit');
+const statusPill = document.getElementById('statusPill');
+
+function formatTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = (sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+function updateTimerDisplay(){
+  timerText.textContent = formatTime(remainingSeconds);
+  timerDisplay.classList.toggle('danger', remainingSeconds <= 60 && remainingSeconds > 0);
+}
+durationSelect.addEventListener('change', ()=>{
+  if(!examRunning){
+    remainingSeconds = parseInt(durationSelect.value,10) * 60;
+    updateTimerDisplay();
+  }
+});
+updateTimerDisplay();
+
+function startExam(){
+  if(examRunning) return;
+  examRunning = true;
+  remainingSeconds = parseInt(durationSelect.value,10) * 60;
+  updateTimerDisplay();
+  btnStart.disabled = true;
+  btnSubmit.disabled = false;
+  durationSelect.disabled = true;
+  statusPill.classList.add('running');
+  statusPill.innerHTML = '<span class="dot"></span>Đang làm bài';
+
+  timerInterval = setInterval(()=>{
+    remainingSeconds--;
+    updateTimerDisplay();
+    if(remainingSeconds <= 0){
+      clearInterval(timerInterval);
+      submitExam(true);
+    }
+  },1000);
+}
+
+function submitExam(auto){
+  if(!examRunning) return;
+  clearInterval(timerInterval);
+  examRunning = false;
+  btnStart.disabled = false;
+  btnSubmit.disabled = true;
+  durationSelect.disabled = false;
+  statusPill.classList.remove('running');
+  statusPill.innerHTML = '<span class="dot"></span>' + (auto ? 'Hết giờ — đã nộp bài' : 'Đã nộp bài');
+
+  // build answer map from loaded MADE_DB for selected code
+  const code = (madeInput && madeInput.value.trim()) || Object.keys(MADE_DB)[0];
+  const answerMap = {};
+  if(code && MADE_DB[code]){
+    MADE_DB[code].questions.forEach(q=>{
+      const key = String(q.questionId).trim();
+      // prefer explicit answer field if present
+      answerMap[key] = String(q.answer || q.correct || q.correctAnswer || '').trim();
+    });
+  }
+
+  // PHẦN I: mark selected bubble and correct bubble
+  document.querySelectorAll('.qrow').forEach(row=>{
+    const qn = row.querySelector('.qn').textContent.trim();
+    const bubbles = Array.from(row.querySelectorAll('.bubble'));
+    bubbles.forEach(b=> b.classList.remove('sel-correct','sel-wrong','correct-answer'));
+    const selIdx = bubbles.findIndex(b=>b.classList.contains('filled'));
+    const ans = answerMap[qn];
+    if(selIdx >= 0){
+      const selected = ['A','B','C','D'][selIdx];
+      if(ans){
+        const normalizedAns = String(ans).trim().toUpperCase();
+        if(normalizedAns === selected) bubbles[selIdx].classList.add('sel-correct');
+        else {
+          bubbles[selIdx].classList.add('sel-wrong');
+          const correctIdx = ['A','B','C','D'].indexOf(normalizedAns);
+          if(correctIdx >= 0) bubbles[correctIdx].classList.add('correct-answer');
+        }
+      }
+    } else if(ans){
+      const correctIdx = ['A','B','C','D'].indexOf(String(ans).trim().toUpperCase());
+      if(correctIdx >= 0) bubbles[correctIdx].classList.add('correct-answer');
+    }
+  });
+
+  // PHẦN II: each line has Đ/S options
+  document.querySelectorAll('.p2-pair .p2-cau').forEach(cauWrap=>{
+    const label = cauWrap.querySelector('.cau-label').textContent.replace(/[^0-9]/g,'');
+    cauWrap.querySelectorAll('.p2-line').forEach(line=>{
+      const opts = Array.from(line.querySelectorAll('.opts .bubble'));
+      opts.forEach(b=> b.classList.remove('sel-correct','sel-wrong','correct-answer'));
+      const sel = line.querySelector('.opts .bubble.filled');
+      const sub = line.querySelector('span').textContent.replace(')','').trim();
+      const key = label + sub[0];
+      const ans = answerMap[key];
+      if(sel){
+        const val = opts[0] === sel ? 'Đ' : 'S';
+        if(ans){
+          const aNorm = String(ans).trim().toUpperCase();
+          const correctIsTrue = (aNorm === 'Đ' || aNorm === 'D' || aNorm === 'TRUE' || aNorm === '1');
+          if((correctIsTrue && val === 'Đ') || (!correctIsTrue && val === 'S')){
+            sel.classList.add('sel-correct');
+          } else {
+            sel.classList.add('sel-wrong');
+            if(correctIsTrue) opts[0].classList.add('correct-answer'); else opts[1].classList.add('correct-answer');
+          }
+        }
+      } else if(ans){
+        const aNorm = String(ans).trim().toUpperCase();
+        const correctIsTrue = (aNorm === 'Đ' || aNorm === 'D' || aNorm === 'TRUE' || aNorm === '1');
+        if(correctIsTrue) opts[0].classList.add('correct-answer'); else opts[1].classList.add('correct-answer');
+      }
+    });
+  });
+
+  // PHẦN III: compare entered normalized values
+  document.querySelectorAll('.p3-col').forEach((col, idx)=>{
+    const boxes = col.querySelectorAll('.p3-digit-cell');
+    let entered = Array.from(boxes).map(c=>normalizePart3Value(c.textContent)).join('');
+    const qKey = String(idx+1);
+    const ans = answerMap[qKey] || answerMap['P3'+qKey] || answerMap['p3-'+qKey];
+    col.querySelectorAll('.p3-rows .bubble').forEach(b=>{ b.classList.remove('sel-correct','sel-wrong','correct-answer'); });
+    if(ans && String(ans).trim().length>0){
+      const normAns = normalizePart3Value(ans);
+      if(entered === normAns){
+        col.querySelectorAll('.p3-rows .bubble.filled').forEach(b=> b.classList.add('sel-correct'));
+      } else {
+        col.querySelectorAll('.p3-rows .bubble.filled').forEach(b=> b.classList.add('sel-wrong'));
+        const chars = normAns.split('');
+        chars.forEach((ch, pos)=>{
+          col.querySelectorAll('.p3-rows .bubble').forEach(b=>{
+            if(String(b.dataset && b.dataset.col) === String(pos)){
+              const bd = b.dataset.digit ? normalizePart3Value(b.dataset.digit) : normalizePart3Value(b.textContent);
+              if(bd === ch) b.classList.add('correct-answer');
+            }
+          });
+        });
+      }
+    }
+  });
+
+}
+
+
+function resetExam(){
+  clearInterval(timerInterval);
+  examRunning = false;
+  btnStart.disabled = false;
+  btnSubmit.disabled = true;
+  durationSelect.disabled = false;
+  remainingSeconds = parseInt(durationSelect.value,10) * 60;
+  updateTimerDisplay();
+  statusPill.classList.remove('running');
+  statusPill.innerHTML = '<span class="dot"></span>Chưa bắt đầu';
+  document.querySelectorAll('#practice .bubble.filled').forEach(b=>b.classList.remove('filled'));
+  document.getElementById('madeInput').value = '';
+  document.getElementById('madeResult').classList.remove('show');
+  // Clear PHẦN III marks and values
+  document.querySelectorAll('.p3-col').forEach(col=>{
+    col.classList.remove('correct','wrong');
+    col.querySelectorAll('.p3-digit-cell').forEach(c=>{ c.textContent=''; c.classList.remove('has-val'); });
+    col.querySelectorAll('.p3-rows .bubble').forEach(b=>b.classList.remove('filled'));
+    col.querySelectorAll('.p3-rows .bubble').forEach(b=> b.classList.remove('sel-correct','sel-wrong','correct-answer'));
+  });
+  // Clear PHẦN I marks and values
+  document.querySelectorAll('.qrow').forEach(row=>{
+    row.classList.remove('correct','wrong');
+    row.querySelectorAll('.bubble').forEach(b=>{ b.classList.remove('filled'); b.classList.remove('has-val'); b.classList.remove('sel-correct','sel-wrong','correct-answer'); });
+  });
+  // Clear PHẦN II marks and values
+  document.querySelectorAll('.p2-pair .p2-cau').forEach(cauWrap=>{
+    cauWrap.querySelectorAll('.p2-line').forEach(line=>{
+      line.classList.remove('correct','wrong');
+      line.querySelectorAll('.bubble').forEach(b=>{ b.classList.remove('filled'); b.classList.remove('has-val'); b.classList.remove('sel-correct','sel-wrong','correct-answer'); });
+    });
+  });
+}
+
+/* ---------------- Mã đề lookup ---------------- */
+let MADE_DB = {};
+
+const GOOGLE_SHEET_ID = '1pZAFGIvvUCZ-4He6N74_-flcGzoub-zf3tp0i1JKZTY';
+const GOOGLE_SHEET_GID = '185719639';
+
+const examInfo = document.getElementById('examInfo');
+const examCodes = document.getElementById('examCodes');
+const questionList = document.getElementById('questionList');
+const madeInput = document.getElementById('madeInput');
+const madeCodesList = document.getElementById('madeCodesList');
+const codeSelect = document.getElementById('codeSelect');
+
+function updateExamCodesList(){
+  if(!madeCodesList || !examCodes) return;
+  madeCodesList.innerHTML = '';
+  if(codeSelect) codeSelect.innerHTML = '<option value="">-- Chọn mã đề --</option>';
+  const keys = Object.keys(MADE_DB).sort();
+  if(keys.length === 0){
+    examCodes.textContent = 'Không có mã đề nào.';
+    return;
+  }
+  examCodes.textContent = keys.join(', ');
+  keys.forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = code;
+    madeCodesList.appendChild(opt);
+    if(codeSelect){
+      const sel = document.createElement('option');
+      sel.value = code;
+      sel.textContent = code;
+      codeSelect.appendChild(sel);
+    }
+  });
+}
+
+function renderSelectedExam(code){
+  const entry = MADE_DB[code];
+  if(!entry){
+    if(examInfo) examInfo.textContent = 'Không tìm thấy mã đề này trong dữ liệu Sheet.';
+    if(questionList) questionList.textContent = 'Vui lòng nhập mã đề hợp lệ.';
+    return;
+  }
+  if(examInfo) examInfo.innerHTML = `<strong>Mã đề:</strong> ${code}<br><strong>Số câu hỏi:</strong> ${entry.questions.length}`;
+  if(entry.questions.length === 0){
+    if(questionList) questionList.textContent = 'Sheet chưa có câu hỏi cho mã đề này.';
+    return;
+  }
+  if(questionList) questionList.innerHTML = '';
+  entry.questions.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '12px';
+    const qHtml = document.createElement('div');
+    qHtml.innerHTML = `<strong>${q.questionId}</strong>: ${q.questionText}`;
+    div.appendChild(qHtml);
+    const opts = document.createElement('div');
+    opts.style.marginLeft = '12px';
+    const labels = ['A','B','C','D'];
+    (q.options || []).forEach((opt, i) => {
+      const o = document.createElement('div');
+      o.innerHTML = `<span style="font-weight:700;">${labels[i] || ''}.</span> ${opt || ''}`;
+      opts.appendChild(o);
+    });
+    div.appendChild(opts);
+    questionList.appendChild(div);
+  });
+  // update slider bounds and ensure listeners
+  const slider = document.getElementById('questionSlider');
+  setTimeout(()=>{
+    if(slider && questionList){
+      slider.max = Math.max(0, questionList.scrollHeight - questionList.clientHeight);
+      slider.value = questionList.scrollTop;
+      slider.style.display = slider.max>0 ? 'block' : 'none';
+    }
+  }, 0);
+  setupQuestionSliderListeners();
+}
+
+function lookupMaDe(){
+  const val = madeInput.value.trim();
+  if(!val){
+    examInfo.textContent = 'Nhập mã đề để xem chi tiết đề thi.';
+    questionList.textContent = 'Nhập mã đề để lấy câu hỏi từ sheet.';
+    return;
+  }
+  renderSelectedExam(val);
+}
+
+function saveSheetData(sheetRows){
+  const data = {};
+  for(let i=1;i<sheetRows.length;i++){ // bắt đầu từ hàng thứ 2 (bao gồm câu 1 nếu nằm trên hàng 2)
+    const row = sheetRows[i];
+    const code = String(row[0] || '').trim();
+    const questionId = String(row[1] || '').trim(); // cột B
+    const questionText = String(row[2] || '').trim(); // cột C
+    const optionA = String(row[3] || '').trim(); // cột D
+    const optionB = String(row[4] || '').trim(); // cột E
+    const optionC = String(row[5] || '').trim(); // cột F
+    const optionD = String(row[6] || '').trim(); // cột G
+    const correct = String(row[7] || '').trim(); // cột H (đáp án đúng, ví dụ: A/B/C/D or Đ/S or numeric)
+    if(!code || !questionId) continue;
+    if(!data[code]) data[code] = { questions: [] };
+    data[code].questions.push({ questionId, questionText, options: [optionA, optionB, optionC, optionD], answer: correct });
+  }
+  MADE_DB = data;
+  updateExamCodesList();
+}
+
+function setupQuestionSliderListeners(){
+  if(window._questionSliderInited) return; window._questionSliderInited = true;
+  const slider = document.getElementById('questionSlider');
+  const qList = document.getElementById('questionList');
+  if(!slider || !qList) return;
+  slider.addEventListener('input', ()=>{ qList.scrollTop = Number(slider.value); });
+  qList.addEventListener('scroll', ()=>{ slider.value = qList.scrollTop; });
+  window.addEventListener('resize', ()=>{ setTimeout(()=>{ slider.max = Math.max(0, qList.scrollHeight - qList.clientHeight); },120); });
+}
+
+function parseCsv(text){
+  const rows = [];
+  let current = '';
+  let inQuotes = false;
+  const addCell = () => { rows[rows.length-1].push(current); current = ''; };
+  rows.push([]);
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else {
+      if(ch === '"'){
+        inQuotes = true;
+      } else if(ch === ','){
+        addCell();
+      } else if(ch === '\r'){
+        continue;
+      } else if(ch === '\n'){
+        addCell();
+        rows.push([]);
+      } else {
+        current += ch;
+      }
+    }
+  }
+  addCell();
+  if(rows[rows.length-1].length === 0) rows.pop();
+  return rows;
+}
+
+// removed unused header-detection helper (sheet uses fixed columns A-D starting row 3)
+
+async function fetchGoogleSheetCsv(sheetId,gid){
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  const response = await fetch(url);
+  if(!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
+  const text = await response.text();
+  return parseCsv(text);
+}
+
+async function loadMadeDataFromGoogleSheet(){
+  try {
+    const rows = await fetchGoogleSheetCsv(GOOGLE_SHEET_ID, GOOGLE_SHEET_GID);
+    if(rows.length < 2) {
+      if(examInfo) examInfo.textContent = 'Sheet không có dữ liệu hợp lệ.';
+      return;
+    }
+    if(rows.length < 3){
+      if(examInfo) examInfo.textContent = 'Sheet không có dữ liệu đủ của hàng 3 trở đi.';
+      return;
+    }
+    saveSheetData(rows);
+    console.log(`MADE_DB loaded from Google Sheet (${Object.keys(MADE_DB).length} mã đề).`);
+    if(examInfo && questionList){
+      examInfo.textContent = 'Dữ liệu Google Sheet đã nạp thành công. Nhập mã đề để xem câu hỏi.';
+      questionList.textContent = 'Nhập mã đề để hiển thị câu hỏi.';
+    }
+    updateExamCodesList();
+  } catch(err){
+    console.warn('Lỗi tải Google Sheet:', err);
+    if(examInfo) examInfo.textContent = 'Lỗi tải Google Sheet. Kiểm tra quyền truy cập và thử lại.';
+    if(questionList) questionList.textContent = 'Không thể nạp dữ liệu câu hỏi từ Sheet.';
+  }
+}
+
+loadMadeDataFromGoogleSheet();
+
+function lookupMaDe(){
+  const val = madeInput.value.trim();
+  if(codeSelect) codeSelect.value = val;
+  if(!val){
+    if(examInfo) examInfo.textContent = 'Nhập mã đề để xem chi tiết đề thi.';
+    if(questionList) questionList.textContent = 'Nhập mã đề để lấy câu hỏi từ sheet.';
+    return;
+  }
+  renderSelectedExam(val);
+}
+
+function onCodeSelectChange(){
+  if(!codeSelect) return;
+  const code = codeSelect.value;
+  madeInput.value = code;
+  lookupMaDe();
+}
+
+// answers are not displayed; function removed
+</script>
+</body>
+</html>
