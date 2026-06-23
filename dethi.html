@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tri Thức — Phòng luyện thi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght=0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght=0,500;0,600;0,700;1,500&family=Inter:wght=400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink: #1c2a24;
@@ -210,6 +210,18 @@
   .p3-digit-cell{width:18px; height:21px; border:1px solid var(--rose); border-radius:2px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--ink-light);}
   .p3-digit-cell.has-val{color:#000;}
   
+  /* --- CÁC STYLE MÀU CHẤM ĐIỂM CHO Ô NHẬP SỐ PHẦN III --- */
+  .p3-digit-cell.sel-correct {
+    background-color: #e6f0e2 !important;
+    border-color: #228B22 !important;
+    color: #228B22 !important;
+  }
+  .p3-digit-cell.sel-wrong {
+    background-color: #fce8e6 !important;
+    border-color: var(--rose) !important;
+    color: var(--rose) !important;
+  }
+
   .p3-rows{display:flex; flex-direction:column; align-items:center;}
   .p3-symrow{display:flex; align-items:center; gap:5px; font-size:12px; height:21px;}
   .p3-symrow .sym{width:12px; text-align:center; font-weight:800;}
@@ -337,6 +349,7 @@ const questionList = document.getElementById('questionList');
 const madeInput = document.getElementById('madeInput');
 const madeCodesList = document.getElementById('madeCodesList');
 const codeSelect = document.getElementById('codeSelect');
+let currentPart3Ids = [];
 
 /* ---------------- Build PHẦN I (1-40, A B C D) ---------------- */
 const ranges = [[1,10],[11,20],[21,30],[31,40]];
@@ -529,7 +542,29 @@ for(let cau=1; cau<=6; cau++){
 
 function normalizePart3Value(str){
   if(!str) return '';
-  return str.replace(/\u2212/g,'-').replace(/\./g,',').trim();
+  return String(str)
+    .replace(/\u2212/g,'-')
+    .replace(/－/g,'-')
+    .replace(/[‒–—]/g,'-')
+    .replace(/，/g,',')
+    .replace(/\./g,',')
+    .replace(/\s+/g,'')
+    .trim();
+}
+
+/* ---------------- Xử lý chuỗi đáp án phần Đúng/Sai ---------------- */
+function parsePart2Answers(qId, correctStr) {
+  const map = {};
+  const regex = /([a-d])\)\s*(ĐÚNG|SAI|Đ|S)/gi;
+  let match;
+  while ((match = regex.exec(correctStr)) !== null) {
+    const sub = match[1].toLowerCase(); 
+    let val = match[2].toUpperCase();   
+    if (val === 'ĐÚNG') val = 'Đ';
+    if (val === 'SAI') val = 'S';
+    map[qId + sub] = val; 
+  }
+  return map;
 }
 
 /* ---------------- Timer logic ---------------- */
@@ -597,7 +632,28 @@ function submitExam(auto){
   const answerMap = {};
   if(code && MADE_DB[code]){
     MADE_DB[code].questions.forEach(q=>{
-      answerMap[String(q.questionId).trim()] = String(q.answer || '').trim();
+      if (q.type === 1) {
+        // Multiple choice A-D: normalize to single uppercase letter
+        const raw = String(q.answer || '').trim();
+        const m = raw.match(/[A-D]/i);
+        answerMap[String(q.questionId).trim()] = m ? m[0].toUpperCase() : raw.toUpperCase();
+      } else if (q.type === 2) {
+        const p2Ans = parsePart2Answers(q.questionId, q.answer);
+        Object.assign(answerMap, p2Ans);
+      } else if (q.type === 3) {
+        // Part III: store only under P3-prefixed keys to avoid colliding with Part I numeric keys
+        const rawQid = String(q.questionId || '').trim();
+        const ans = String(q.answer || '').trim();
+        const normalizedId = rawQid.replace(/^P3\s*/i, '').trim();
+        if (/^\d+$/.test(normalizedId)) {
+          answerMap['P3' + normalizedId] = ans;
+          answerMap['P3 ' + normalizedId] = ans;
+        } else {
+          answerMap['P3' + rawQid] = ans;
+        }
+      } else {
+        answerMap[String(q.questionId).trim()] = String(q.answer || '').trim();
+      }
     });
   }
 
@@ -616,6 +672,19 @@ function submitExam(auto){
     });
   });
 
+  // Debug/report Part I: export a quick report for inspection
+  try{
+    const part1Report = Array.from(document.querySelectorAll('.qrow')).map(r=>{
+      const qn = r.dataset.qn;
+      const bubbles = Array.from(r.querySelectorAll('.bubble'));
+      const correct = bubbles.find(b=>b.classList.contains('correct-answer'))?.dataset.opt || null;
+      const selected = bubbles.find(b=>b.classList.contains('filled'))?.dataset.opt || null;
+      return {qn, correct, selected, classes: bubbles.map(b=>({opt:b.dataset.opt, class:b.className}))};
+    });
+    window.part1Report = part1Report;
+    try{ updateDebug({part1Report: part1Report.slice(0,12) }) }catch(e){}
+  }catch(e){}
+
   // PHẦN II: Kiểm tra đáp án Đúng/Sai
   document.querySelectorAll('.p2-line').forEach(line=>{
     const cauNum = line.closest('.p2-cau').dataset.cau;
@@ -633,32 +702,67 @@ function submitExam(auto){
     });
   });
 
-  // PHẦN III: Kiểm tra đáp án Trả lời ngắn
-  document.querySelectorAll('.p3-col').forEach(col=>{
-    const cauNum = col.dataset.cau;
-    const boxes = col.querySelectorAll('.p3-digit-cell');
-    let entered = Array.from(boxes).map(c=>normalizePart3Value(c.textContent)).join('');
-    const ans = answerMap[cauNum] || answerMap['P3'+cauNum];
-    const normAns = normalizePart3Value(ans);
+  // PHẦN III: Kiểm tra đáp án Trả lời ngắn (ĐÃ ĐƯỢC CHỈNH SỬA ĐỔI MÀU CHO CẢ Ô SỐ)
+// PHẦN III: Kiểm tra đáp án Trả lời ngắn
+  // Build ordered list of Part III question IDs directly from the selected exam
+  const part3List = (MADE_DB[code] && Array.isArray(MADE_DB[code].questions)) ?
+    MADE_DB[code].questions.filter(q=>q.type===3).map(q=>String(q.questionId).trim()) : [];
 
-    col.querySelectorAll('.bubble').forEach(b=> b.classList.remove('sel-correct','sel-wrong','correct-answer'));
+  document.querySelectorAll('.p3-col').forEach(col => {
+    const cauNum = parseInt(col.dataset.cau || '', 10);
+    const positionIndex = cauNum > 0 ? cauNum - 1 : -1;
+    const actualQuestionId = part3List[positionIndex] || '';
+    const ans = actualQuestionId
+      ? (answerMap['P3' + actualQuestionId] || answerMap['P3 ' + actualQuestionId] || answerMap[actualQuestionId] || '')
+      : "";
+    const normAns = normalizePart3Value(ans);
+    const boxes = col.querySelectorAll('.p3-digit-cell');
+    
+    // 1. Reset trạng thái cũ
+    col.querySelectorAll('.bubble').forEach(b => b.classList.remove('sel-correct', 'sel-wrong', 'correct-answer'));
+    boxes.forEach(cell => cell.classList.remove('sel-correct', 'sel-wrong'));
 
     if (normAns) {
-      if (entered === normAns) {
-        col.querySelectorAll('.bubble.filled').forEach(b => b.classList.add('sel-correct'));
-      } else {
-        col.querySelectorAll('.bubble.filled').forEach(b => b.classList.add('sel-wrong'));
-        const chars = normAns.split('');
-        chars.forEach((ch, pos)=>{
-          col.querySelectorAll('.bubble').forEach(b=>{
-            if(String(b.dataset.col) === String(pos) && normalizePart3Value(b.dataset.digit) === ch) {
-              b.classList.add('correct-answer');
-            }
-          });
+      const ansChars = normAns.split('');
+      
+      boxes.forEach((cell, idx) => {
+        const userVal = normalizePart3Value(cell.textContent);
+        const correctVal = ansChars[idx] || "";
+        cell.classList.remove('sel-correct', 'sel-wrong');
+
+        if (userVal !== "") {
+          if (correctVal !== "" && userVal === correctVal) {
+            // Đúng: Tô xanh ô vuông và bong bóng chọn tương ứng
+            cell.classList.add('sel-correct');
+            col.querySelectorAll(`.bubble[data-col="${idx}"]`).forEach(b => {
+              if (normalizePart3Value(b.dataset.digit || b.textContent) === userVal) {
+                b.classList.add('sel-correct');
+              }
+            });
+          } else {
+            // Sai: Tô đỏ ô vuông và bong bóng chọn
+            cell.classList.add('sel-wrong');
+            col.querySelectorAll(`.bubble.filled[data-col="${idx}"]`).forEach(b => {
+              b.classList.add('sel-wrong');
+            });
+          }
+        }
+      });
+
+      // 2. Highlight đáp án đúng (gợi ý cho ô chưa nhập hoặc nhập sai)
+      ansChars.forEach((char, idx) => {
+        col.querySelectorAll(`.bubble[data-col="${idx}"]`).forEach(b => {
+          if (normalizePart3Value(b.dataset.digit || b.textContent) === char) {
+            b.classList.add('correct-answer');
+          }
         });
-      }
+      });
     }
+    // Debug: show answer and cell classes
+    try{ updateDebug({currentPart3Ids, actualQuestionId: actualQuestionId, normAns, cells: Array.from(boxes).map(c=>({text:c.textContent, classes:c.className})) }); }catch(e){}
   });
+  try{ updateDebug({answerMapKeys: Object.keys(answerMap), part3Cells:Array.from(document.querySelectorAll('.p3-digit-cell')).map(c=>({text:c.textContent,classes:c.className})) }); }catch(e){}
+  try{ window.lastAnswerMap = answerMap; }catch(e){}
 }
 
 function resetExam(){
@@ -673,7 +777,10 @@ function resetExam(){
   statusPill.innerHTML = '<span class="dot"></span>Chưa bắt đầu';
   
   document.querySelectorAll('.bubble').forEach(b=>b.classList.remove('filled','has-val','sel-correct','sel-wrong','correct-answer'));
-  document.querySelectorAll('.p3-digit-cell').forEach(c=>{ c.textContent=''; c.classList.remove('has-val'); });
+  
+  // Xóa toàn bộ giá trị và các màu sắc chấm điểm cũ của ô số khi Reset
+  document.querySelectorAll('.p3-digit-cell').forEach(c=>{ c.textContent=''; c.classList.remove('has-val', 'sel-correct', 'sel-wrong'); });
+  
   madeInput.value = '';
   if (codeSelect) codeSelect.value = '';
   examInfo.textContent = 'Nhập mã đề để xem chi tiết đề thi.';
@@ -711,38 +818,80 @@ function renderSelectedExam(code){
     questionList.textContent = 'Sheet chưa có câu hỏi cho mã đề này.';
     return;
   }
-  questionList.innerHTML = '';
+  
+  let html1 = document.createElement('div');
+  html1.innerHTML = '<div style="font-family:\'Lora\', serif; font-weight:700; color:var(--moss-deep); margin-bottom:12px; margin-top:0;">PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN</div>';
+  
+  let html2 = document.createElement('div');
+  html2.innerHTML = '<div style="font-family:\'Lora\', serif; font-weight:700; color:var(--moss-deep); margin-bottom:12px; margin-top:24px;">PHẦN II. TRẮC NGHIỆM ĐÚNG/SAI</div>';
+  
+  let html3 = document.createElement('div');
+  html3.innerHTML = '<div style="font-family:\'Lora\', serif; font-weight:700; color:var(--moss-deep); margin-bottom:12px; margin-top:24px;">PHẦN III. TRẮC NGHIỆM TRẢ LỜI NGẮN</div>';
+  
+  let count1 = 0, count2 = 0, count3 = 0;
+
+  currentPart3Ids = [];
   entry.questions.forEach((q) => {
+    const trimmedQuestionId = String(q.questionId || '').trim();
     const div = document.createElement('div');
-    div.style.marginBottom = '16px';
-    
+    div.style.marginBottom = '20px';
+
     const qHtml = document.createElement('div');
-    qHtml.innerHTML = `<strong>${q.questionId}</strong>: ${q.questionText}`;
+    qHtml.style.marginBottom = '6px';
+    qHtml.innerHTML = `<strong style="color:var(--rose);">Câu ${trimmedQuestionId}:</strong> ${q.questionText}`;
     div.appendChild(qHtml);
 
-    // LOGIC HIỂN THỊ ẢNH: Kiểm tra nếu câu hỏi có chứa Link ảnh từ Cột I
     if(q.imageUrl && q.imageUrl.trim().length > 0){
       const img = document.createElement('img');
       img.src = q.imageUrl.trim();
       img.alt = `Ảnh minh họa câu ${q.questionId}`;
       img.className = 'question-img';
-      img.onerror = () => { img.style.display = 'none'; }; // Ẩn ảnh nếu đường link bị lỗi
+      img.onerror = () => { img.style.display = 'none'; }; 
       div.appendChild(img);
     }
 
     const opts = document.createElement('div');
     opts.style.marginLeft = '12px';
-    const labels = ['A','B','C','D'];
-    (q.options || []).forEach((opt, i) => {
-      if(opt && opt.trim().length > 0) {
-        const o = document.createElement('div');
-        o.innerHTML = `<span style="font-weight:700;">${labels[i]}.</span> ${opt}`;
-        opts.appendChild(o);
-      }
-    });
+    opts.style.lineHeight = '1.6';
+    
+    if (q.type === 1) {
+      const labels = ['A','B','C','D'];
+      (q.options || []).forEach((opt, i) => {
+        if(opt && opt.trim().length > 0) {
+          const o = document.createElement('div');
+          o.innerHTML = `<span style="font-weight:700;">${labels[i]}.</span> ${opt}`;
+          opts.appendChild(o);
+        }
+      });
+      count1++;
+    } else if (q.type === 2) {
+      const labels = ['a','b','c','d'];
+      (q.options || []).forEach((opt, i) => {
+        if(opt && opt.trim().length > 0) {
+          const o = document.createElement('div');
+          o.innerHTML = `<span style="font-weight:700;">${labels[i]})</span> ${opt}`;
+          opts.appendChild(o);
+        }
+      });
+      count2++;
+    } else {
+      count3++;
+    }
+    
     div.appendChild(opts);
-    questionList.appendChild(div);
+
+    if (q.type === 1) html1.appendChild(div);
+    else if (q.type === 2) html2.appendChild(div);
+    else {
+      currentPart3Ids.push(trimmedQuestionId);
+      html3.appendChild(div);
+    }
   });
+
+  questionList.innerHTML = '';
+  if (count1 > 0) questionList.appendChild(html1);
+  if (count2 > 0) questionList.appendChild(html2);
+  if (count3 > 0) questionList.appendChild(html3);
 
   const slider = document.getElementById('questionSlider');
   setTimeout(()=>{
@@ -753,6 +902,12 @@ function renderSelectedExam(code){
     }
   }, 0);
   setupQuestionSliderListeners();
+  updateDebug({currentPart3Ids});
+}
+
+function updateDebug(info){
+  // Debug overlay disabled in production — no-op to avoid showing small overlay
+  try{ /* intentionally empty */ }catch(e){}
 }
 
 function lookupMaDe(){
@@ -773,28 +928,68 @@ function onCodeSelectChange(){
 
 function saveSheetData(sheetRows){
   const data = {};
+  // Group rows by code and stt (column B)
   for(let i=1;i<sheetRows.length;i++){
     const row = sheetRows[i];
     const code = String(row[0] || '').trim();
-    const questionId = String(row[1] || '').trim();
+    const sttRaw = String(row[1] || '').trim();
+    const stt = sttRaw;
     const questionText = String(row[2] || '').trim();
     const optionA = String(row[3] || '').trim();
     const optionB = String(row[4] || '').trim();
     const optionC = String(row[5] || '').trim();
     const optionD = String(row[6] || '').trim();
     const correct = String(row[7] || '').trim();
-    const imageUrl = String(row[8] || '').trim(); // Lưu trữ dữ liệu ảnh từ Cột I (row[8])
-    
-    if(!code || !questionId) continue;
-    if(!data[code]) data[code] = { questions: [] };
-    data[code].questions.push({ 
-      questionId, 
-      questionText, 
-      options: [optionA, optionB, optionC, optionD], 
-      answer: correct,
-      imageUrl: imageUrl // Gán giá trị đường dẫn hình ảnh vào đối tượng câu hỏi
+    const imageUrl = String(row[8] || '').trim();
+
+    if(!code || !stt) continue;
+    if(!data[code]) data[code] = { byStt: {}, questions: [] };
+    if(!data[code].byStt[stt]) data[code].byStt[stt] = { stt: stt, raws: [] };
+
+    // Detect type
+    let qType = 3;
+    const ansCheck = correct.toUpperCase();
+    if (ansCheck.includes('ĐÚNG') || ansCheck.includes('SAI') || /\bĐ\b/.test(ansCheck) || /\bS\b/.test(ansCheck)) {
+      qType = 2;
+    } else if (/^[A-D]$/.test(ansCheck.trim()) || /^[A-D]\)$/.test(ansCheck.trim()) || /^[A-D]\./.test(ansCheck.trim())) {
+      qType = 1;
+    } else {
+      qType = 3;
+    }
+
+    let normalizedAnswer = String(correct || '').trim();
+    if (qType === 1) {
+      const m = normalizedAnswer.match(/[A-D]/i);
+      normalizedAnswer = m ? m[0].toUpperCase() : normalizedAnswer.toUpperCase();
+    }
+
+    data[code].byStt[stt].raws.push({
+      questionId: stt,
+      questionText,
+      options: [optionA, optionB, optionC, optionD],
+      answer: normalizedAnswer,
+      imageUrl,
+      type: qType
     });
   }
+
+  // Build ordered questions array: for each stt ascending, push part1, part2, part3 if present
+  Object.keys(data).forEach(code => {
+    const groups = data[code].byStt;
+    const stts = Object.keys(groups).map(s=>isNaN(Number(s))?s:Number(s)).sort((a,b)=>a-b);
+    const questions = [];
+    stts.forEach(sttKey => {
+      const grp = groups[sttKey].raws || [];
+      // find part1 (type 1), part2 (type 2), part3 (type 3)
+      const p1 = grp.find(x=>x.type===1);
+      const p2 = grp.find(x=>x.type===2);
+      const p3 = grp.find(x=>x.type===3);
+      if(p1){ questions.push({ questionId: String(p1.questionId).trim(), questionText: p1.questionText, options: p1.options, answer: p1.answer, imageUrl: p1.imageUrl, type:1 }); }
+      if(p2){ questions.push({ questionId: String(p2.questionId).trim(), questionText: p2.questionText, options: p2.options, answer: p2.answer, imageUrl: p2.imageUrl, type:2 }); }
+      if(p3){ questions.push({ questionId: String(p3.questionId).trim(), questionText: p3.questionText, options: p3.options, answer: p3.answer, imageUrl: p3.imageUrl, type:3 }); }
+    });
+    data[code].questions = questions;
+  });
   MADE_DB = data;
   updateExamCodesList();
 }
@@ -849,7 +1044,6 @@ async function loadMadeDataFromGoogleSheet(){
   }
 }
 
-// Khởi chạy ứng dụng
 loadMadeDataFromGoogleSheet();
 </script>
 </body>
